@@ -273,6 +273,63 @@
       margin-bottom: 48px;
     }
 
+    /* ===== Why Section (NEW) ===== */
+    .why-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .why-card {
+      padding: 32px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .why-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .why-card.pain::before { background: linear-gradient(90deg, #ef4444, #f97316); }
+    .why-card.solve::before { background: linear-gradient(90deg, #22c55e, #63dc96); }
+
+    .why-card .tag {
+      display: inline-block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+
+    .why-card.pain .tag {
+      background: rgba(239, 68, 68, .12);
+      color: #f87171;
+    }
+
+    .why-card.solve .tag {
+      background: rgba(34, 197, 94, .12);
+      color: #4ade80;
+    }
+
+    .why-card h3 {
+      font-size: 17px;
+      margin-bottom: 8px;
+    }
+
+    .why-card p {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
     /* ===== Features ===== */
     .features-grid {
       display: grid;
@@ -419,6 +476,7 @@
       .nav-toggle { display: block; }
       .tech-bar { gap: 20px; }
       section { padding: 60px 0; }
+      .why-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -428,6 +486,7 @@
   <nav class="navbar" id="navbar">
     <a href="#" class="nav-brand">N<span>ight</span>Light</a>
     <ul class="nav-links">
+      <li><a href="#why">为什么需要</a></li>
       <li><a href="#features">功能</a></li>
       <li><a href="#architecture">架构</a></li>
       <li><a href="#demo">演示</a></li>
@@ -444,6 +503,7 @@
 
   <!-- Mobile Menu -->
   <div class="mobile-menu" id="mobileMenu">
+    <a href="#why">为什么需要</a>
     <a href="#features">功能</a>
     <a href="#architecture">架构</a>
     <a href="#demo">演示</a>
@@ -458,13 +518,13 @@
       MIT Licensed &middot; Open Source
     </div>
     <h1>NightLight</h1>
-    <p class="tagline">低光照视频实时增强系统<br>C++17 + FFmpeg + ONNX Runtime + LLM Agent</p>
+    <p class="tagline">让夜间监控不再是盲区<br>低光照视频实时增强系统</p>
     <div class="hero-buttons">
       <a href="https://github.com/breaker505/NightLight" class="btn btn-primary">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
         GitHub
       </a>
-      <a href="#architecture" class="btn btn-outline">了解更多</a>
+      <a href="#why" class="btn btn-outline">了解更多</a>
     </div>
     <div class="tech-bar">
       <div class="tech-item"><div class="tech-icon">⚡</div>C++17</div>
@@ -473,6 +533,63 @@
       <div class="tech-item"><div class="tech-icon">🖥️</div>Qt</div>
       <div class="tech-item"><div class="tech-icon">🤖</div>LLM Agent</div>
       <div class="tech-item"><div class="tech-icon">🐳</div>Docker</div>
+    </div>
+  </section>
+
+  <!-- ===== NEW: Why NightLight ===== -->
+  <section id="why">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Why NightLight</div>
+        <h2 class="section-title">为什么需要 NightLight</h2>
+        <p class="section-desc">夜间监控是安防、交通、工业场景中最常见也最容易被忽视的痛点。大量摄像头一到夜间就沦为摆设。</p>
+      </div>
+
+      <div class="why-grid">
+        <!-- Pain Points -->
+        <div class="why-card pain reveal">
+          <span class="tag">痛点</span>
+          <h3>🌑 夜间可视性差</h3>
+          <p>低照度下画面漆黑、噪点密集，人眼难以辨识车牌、人脸和异常事件。简单亮度拉伸导致过曝和色彩失真。</p>
+        </div>
+        <div class="why-card pain reveal">
+          <span class="tag">痛点</span>
+          <h3>📋 多路运维效率低</h3>
+          <p>数十路视频流需逐路检查状态、手动重启故障流、人工记录日志。重复工作耗时且易遗漏告警。</p>
+        </div>
+        <div class="why-card pain reveal">
+          <span class="tag">痛点</span>
+          <h3>🧠 缺乏智能辅助</h3>
+          <p>系统只能被动显示，无法主动识别异常、提供诊断建议或执行自动化运维，故障排查全凭经验。</p>
+        </div>
+        <div class="why-card pain reveal">
+          <span class="tag">痛点</span>
+          <h3>🔧 系统碎片化</h3>
+          <p>采集、增强、推流、展示由不同厂商系统拼凑，接口不统一、状态不同步、维护成本高。</p>
+        </div>
+
+        <!-- Solutions -->
+        <div class="why-card solve reveal">
+          <span class="tag">方案</span>
+          <h3>⚡ AI 实时增强</h3>
+          <p>ONNX Runtime 深度学习推理 + CLAHE 直方图均衡化，GPU 不可用时自动降级到 CPU，确保始终可用。</p>
+        </div>
+        <div class="why-card solve reveal">
+          <span class="tag">方案</span>
+          <h3>💬 自然语言调度</h3>
+          <p>LLM Agent 将自然语言转为结构化控制指令，智能诊断故障并提供处置建议，变更操作需审批防误操作。</p>
+        </div>
+        <div class="why-card solve reveal">
+          <span class="tag">方案</span>
+          <h3>📊 多路统一管理</h3>
+          <p>3×3 视频墙同时监控多路流，流生命周期一键管理，FPS/延迟/错误率实时展示，Prometheus 全链路可观测。</p>
+        </div>
+        <div class="why-card solve reveal">
+          <span class="tag">方案</span>
+          <h3>🔌 端到端整合</h3>
+          <p>Server/Agent/Client 三层解耦，标准化协议通信，Docker 一键部署，从采集到展示一套系统搞定。</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -537,8 +654,8 @@
         </thead>
         <tbody>
           <tr><td>Client</td><td>C++/Qt, QML, OpenGL</td><td>窗口框架 / 播放渲染 / 业务界面</td></tr>
-          <tr><td>Agent</td><td>Python, LangChain</td><td>智能对话 / 流媒体控制 / 进程管理</td></tr>
-          <tr><td>Server</td><td>C++, FFmpeg, ONNX Runtime</td><td>采集解码 / 增强处理 / 编解码 / RTMP 推流</td></tr>
+          <tr><td>Agent</td><td>C++17, llama.cpp</td><td>LLM 推理 / 命令路由 / 会话管理</td></tr>
+          <tr><td>Server</td><td>C++17, FFmpeg, ONNX Runtime</td><td>采集解码 / 增强处理 / 编解码 / RTMP 推流</td></tr>
           <tr><td>Nginx-RTMP</td><td>Nginx, RTMP Module</td><td>流媒体中转，推流 / 拉流</td></tr>
         </tbody>
       </table>
