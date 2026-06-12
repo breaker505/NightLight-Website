@@ -18,6 +18,8 @@
       --accent-glow: rgba(108, 140, 255, 0.15);
     }
 
+    html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
       background: var(--bg);
@@ -31,7 +33,104 @@
 
     .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
 
-    /* Hero */
+    /* ===== Navbar ===== */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      transition: background .3s, box-shadow .3s, backdrop-filter .3s;
+    }
+
+    .navbar.scrolled {
+      background: rgba(10, 10, 15, .85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 1px 0 var(--border);
+    }
+
+    .nav-brand {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-brand span { color: var(--accent); }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--text-dim);
+      transition: color .2s, background .2s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: #fff;
+      background: rgba(255, 255, 255, .06);
+      opacity: 1;
+    }
+
+    .nav-github {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #fff;
+      background: var(--accent);
+      transition: background .2s;
+    }
+
+    .nav-github:hover { background: #5a7ae8; color: #fff; opacity: 1; }
+
+    /* Mobile nav */
+    .nav-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+    .nav-toggle span {
+      display: block; width: 20px; height: 2px;
+      background: var(--text); margin: 5px 0;
+      transition: transform .3s, opacity .3s;
+    }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 64px; left: 0; right: 0;
+      background: rgba(10, 10, 15, .95);
+      backdrop-filter: blur(16px);
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      z-index: 999;
+    }
+
+    .mobile-menu.open { display: block; }
+
+    .mobile-menu a {
+      display: block;
+      padding: 12px 0;
+      color: var(--text-dim);
+      font-size: 15px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mobile-menu a:last-child { border-bottom: none; }
+    .mobile-menu a:hover { color: #fff; }
+
+    /* ===== Hero ===== */
     .hero {
       min-height: 100vh;
       display: flex;
@@ -112,11 +211,7 @@
       border: none;
     }
 
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-    }
-
+    .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover { background: #5a7ae8; color: #fff; }
 
     .btn-outline {
@@ -124,7 +219,6 @@
       border: 1px solid var(--border);
       color: var(--text);
     }
-
     .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
 
     /* Tech Stack */
@@ -156,7 +250,7 @@
       font-size: 18px;
     }
 
-    /* Section */
+    /* ===== Section ===== */
     section { padding: 100px 0; }
 
     .section-label {
@@ -179,7 +273,7 @@
       margin-bottom: 48px;
     }
 
-    /* Features */
+    /* ===== Features ===== */
     .features-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -191,10 +285,10 @@
       border-radius: 12px;
       background: var(--surface);
       border: 1px solid var(--border);
-      transition: border-color .2s;
+      transition: border-color .2s, transform .2s;
     }
 
-    .feature-card:hover { border-color: var(--accent); }
+    .feature-card:hover { border-color: var(--accent); transform: translateY(-2px); }
 
     .feature-icon {
       width: 44px; height: 44px;
@@ -208,21 +302,20 @@
     .feature-card h3 { font-size: 17px; margin-bottom: 8px; }
     .feature-card p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
 
-    /* Architecture */
-    .arch-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
+    /* ===== Architecture ===== */
+    .arch-img-wrapper {
+      text-align: center;
+      margin-bottom: 32px;
       border-radius: 12px;
-      padding: 40px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 14px;
-      line-height: 1.8;
-      overflow-x: auto;
-      color: var(--text-dim);
+      overflow: hidden;
+      border: 1px solid var(--border);
     }
 
-    .arch-box .highlight { color: var(--accent); font-weight: 600; }
-    .arch-box .dim { color: #555568; }
+    .arch-img-wrapper img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
 
     /* Components Table */
     .comp-table {
@@ -248,7 +341,7 @@
 
     .comp-table td:first-child { font-weight: 600; color: var(--accent); }
 
-    /* Quick Start */
+    /* ===== Quick Start ===== */
     .code-block {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -273,7 +366,7 @@
       letter-spacing: 1px;
     }
 
-    /* Papers */
+    /* ===== Papers ===== */
     .paper-card {
       padding: 24px;
       border-radius: 10px;
@@ -292,12 +385,11 @@
     }
 
     .tag-patent { background: rgba(250, 204, 21, .15); color: #facc15; }
-    .tag-paper { background: rgba(108, 140, 255, .15); color: var(--accent); }
 
     .paper-card h4 { font-size: 15px; margin-bottom: 6px; }
     .paper-card p { font-size: 13px; color: var(--text-dim); }
 
-    /* Footer */
+    /* ===== Footer ===== */
     footer {
       padding: 48px 0;
       border-top: 1px solid var(--border);
@@ -311,15 +403,54 @@
 
     .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 16px; }
 
-    /* Responsive */
-    @media (max-width: 640px) {
+    /* ===== Scroll Reveal ===== */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .nav-links, .nav-github { display: none; }
+      .nav-toggle { display: block; }
       .tech-bar { gap: 20px; }
-      .arch-box { padding: 20px; font-size: 12px; }
       section { padding: 60px 0; }
     }
   </style>
 </head>
 <body>
+
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <a href="#" class="nav-brand">N<span>ight</span>Light</a>
+    <ul class="nav-links">
+      <li><a href="#features">功能</a></li>
+      <li><a href="#architecture">架构</a></li>
+      <li><a href="#quickstart">快速上手</a></li>
+      <li><a href="#research">研究</a></li>
+    </ul>
+    <a href="https://github.com/breaker505/NightLight" class="nav-github">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#features">功能</a>
+    <a href="#architecture">架构</a>
+    <a href="#quickstart">快速上手</a>
+    <a href="#research">研究</a>
+    <a href="https://github.com/breaker505/NightLight">GitHub</a>
+  </div>
 
   <!-- Hero -->
   <section class="hero">
@@ -347,38 +478,40 @@
   </section>
 
   <!-- Features -->
-  <section>
+  <section id="features">
     <div class="container">
-      <div class="section-label">Features</div>
-      <h2 class="section-title">核心能力</h2>
-      <p class="section-desc">从低光照采集到 AI 增强再到 RTMP 推流，端到端的实时视频增强解决方案。</p>
+      <div class="reveal">
+        <div class="section-label">Features</div>
+        <h2 class="section-title">核心能力</h2>
+        <p class="section-desc">从低光照采集到 AI 增强再到 RTMP 推流，端到端的实时视频增强解决方案。</p>
+      </div>
       <div class="features-grid">
-        <div class="feature-card">
+        <div class="feature-card reveal">
           <div class="feature-icon">🌙</div>
           <h3>低光照实时增强</h3>
           <p>基于 ONNX Runtime 的深度学习推理，对低照度复合退化图像进行实时增强，支持降噪、去模糊、亮度提升。</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal">
           <div class="feature-icon">🤖</div>
           <h3>LLM Agent 智能调度</h3>
           <p>集成大语言模型 Agent，通过自然语言指令控制视频管线，实现智能化参数调优和场景切换。</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal">
           <div class="feature-icon">📡</div>
           <h3>RTMP 推流</h3>
           <p>内置 RTMP 推流模块，增强后的视频可直接推送至直播平台或流媒体服务器。</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal">
           <div class="feature-icon">🖥️</div>
           <h3>跨平台客户端</h3>
           <p>基于 Qt/QML + OpenGL 的桌面客户端，支持视频墙展示、实时预览和交互控制。</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal">
           <div class="feature-icon">🐳</div>
           <h3>Docker 一键部署</h3>
           <p>提供 Docker Compose 编排，支持 GPU 加速，一条命令启动完整的 Server + Agent 服务。</p>
         </div>
-        <div class="feature-card">
+        <div class="feature-card reveal">
           <div class="feature-icon">🔌</div>
           <h3>模块化架构</h3>
           <p>Server / Agent / Client 三层解耦，通过 WebSocket + TCP JSON 通信，各组件可独立扩展和替换。</p>
@@ -390,14 +523,16 @@
   <!-- Architecture -->
   <section id="architecture">
     <div class="container">
-      <div class="section-label">Architecture</div>
-      <h2 class="section-title">系统架构</h2>
-      <p class="section-desc">三层解耦设计，各组件职责清晰，通信协议标准化。</p>
-      <div style="text-align: center; margin-bottom: 32px;">
-        <img src="project.png" alt="NightLight Architecture" style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border);">
+      <div class="reveal">
+        <div class="section-label">Architecture</div>
+        <h2 class="section-title">系统架构</h2>
+        <p class="section-desc">三层解耦设计，各组件职责清晰，通信协议标准化。</p>
+      </div>
+      <div class="arch-img-wrapper reveal">
+        <img src="project.png" alt="NightLight Architecture">
       </div>
 
-      <table class="comp-table">
+      <table class="comp-table reveal">
         <thead>
           <tr><th>组件</th><th>技术栈</th><th>职责</th></tr>
         </thead>
@@ -412,13 +547,15 @@
   </section>
 
   <!-- Quick Start -->
-  <section>
+  <section id="quickstart">
     <div class="container">
-      <div class="section-label">Quick Start</div>
-      <h2 class="section-title">快速上手</h2>
-      <p class="section-desc">Docker 一键启动，或手动构建。</p>
+      <div class="reveal">
+        <div class="section-label">Quick Start</div>
+        <h2 class="section-title">快速上手</h2>
+        <p class="section-desc">Docker 一键启动，或手动构建。</p>
+      </div>
 
-      <div class="code-block" style="margin-bottom: 16px;">
+      <div class="code-block reveal" style="margin-bottom: 16px;">
         <span class="code-label">Docker</span>
 <pre><span class="comment"># 构建并启动 Server + Agent</span>
 <span class="cmd">docker compose up -d</span>
@@ -430,7 +567,7 @@
 <span class="cmd">curl http://127.0.0.1:19102/health</span></pre>
       </div>
 
-      <div class="code-block">
+      <div class="code-block reveal">
         <span class="code-label">Manual Build</span>
 <pre><span class="comment"># Server</span>
 <span class="cmd">cd Server && cmake -B build -DCMAKE_BUILD_TYPE=Release</span>
@@ -443,14 +580,16 @@
     </div>
   </section>
 
-  <!-- Papers -->
-  <section>
+  <!-- Research -->
+  <section id="research">
     <div class="container">
-      <div class="section-label">Research</div>
-      <h2 class="section-title">关联研究</h2>
-      <p class="section-desc">项目核心算法已发表专利。</p>
+      <div class="reveal">
+        <div class="section-label">Research</div>
+        <h2 class="section-title">关联研究</h2>
+        <p class="section-desc">项目核心算法已发表专利。</p>
+      </div>
 
-      <div class="paper-card">
+      <div class="paper-card reveal">
         <span class="tag tag-patent">发明专利</span>
         <h4>CN120563787A</h4>
         <p>低光照视频增强相关发明专利（已公开）</p>
@@ -468,6 +607,49 @@
       <p>NightLight is released under the <a href="https://github.com/breaker505/NightLight/blob/main/LICENSE">MIT License</a>.</p>
     </div>
   </footer>
+
+  <script>
+    // Navbar scroll effect
+    const navbar = document.getElementById('navbar');
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-links a');
+
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 50);
+
+      // Active section highlight
+      let current = '';
+      sections.forEach(section => {
+        const top = section.offsetTop - 120;
+        if (window.scrollY >= top) current = section.getAttribute('id');
+      });
+      navLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+      });
+    });
+
+    // Mobile menu toggle
+    const toggle = document.getElementById('navToggle');
+    const menu = document.getElementById('mobileMenu');
+    toggle.addEventListener('click', () => {
+      menu.classList.toggle('open');
+    });
+    menu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => menu.classList.remove('open'));
+    });
+
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    reveals.forEach(el => observer.observe(el));
+  </script>
 
 </body>
 </html>
