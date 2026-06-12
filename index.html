@@ -393,20 +393,8 @@
       <div class="section-label">Architecture</div>
       <h2 class="section-title">系统架构</h2>
       <p class="section-desc">三层解耦设计，各组件职责清晰，通信协议标准化。</p>
-      <div class="arch-box">
-<pre>
-┌─────────────┐   <span class="highlight">WebSocket</span>    ┌─────────────┐   <span class="highlight">TCP JSON</span>    ┌─────────────┐
-│   <span class="highlight">Client</span>    │◄─────────────►│   <span class="highlight">Agent</span>     │◄────────────►│   <span class="highlight">Server</span>    │
-│  <span class="dim">(Qt/QML)</span>   │               │   <span class="dim">(C++)</span>     │              │  <span class="dim">(C++17)</span>    │
-│  展示 / 交互  │               │  LLM 网关   │              │  媒体管线    │
-└─────────────┘               └──────┬──────┘              └──────┬──────┘
-                                     │ HTTP                     │ GPU
-                                     ▼                           ▼
-                              ┌─────────────┐           ┌──────────────┐
-                              │ <span class="highlight">llama.cpp</span>   │           │ <span class="highlight">ONNX Runtime</span> │
-                              │  <span class="dim">(LLM 推理)</span>  │           │  <span class="dim">(AI 增强)</span>    │
-                              └─────────────┘           └──────────────┘
-</pre>
+      <div style="text-align: center; margin-bottom: 32px;">
+        <img src="project.png" alt="NightLight Architecture" style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border);">
       </div>
 
       <table class="comp-table">
@@ -414,9 +402,10 @@
           <tr><th>组件</th><th>技术栈</th><th>职责</th></tr>
         </thead>
         <tbody>
-          <tr><td>Client</td><td>C++17, Qt 5/6, QML, OpenGL 3.3</td><td>视频墙展示、Agent 对话、设置管理</td></tr>
-          <tr><td>Agent</td><td>C++17, WebSocket, llama.cpp</td><td>LLM 命令路由、会话管理、Server 控制</td></tr>
-          <tr><td>Server</td><td>C++17, epoll, FFmpeg, ONNX Runtime</td><td>音视频采集 / 编解码 / AI 增强 / RTMP 推流</td></tr>
+          <tr><td>Client</td><td>C++/Qt, QML, OpenGL</td><td>窗口框架 / 播放渲染 / 业务界面</td></tr>
+          <tr><td>Agent</td><td>Python, LangChain</td><td>智能对话 / 流媒体控制 / 进程管理</td></tr>
+          <tr><td>Server</td><td>C++, FFmpeg, ONNX Runtime</td><td>采集解码 / 增强处理 / 编解码 / RTMP 推流</td></tr>
+          <tr><td>Nginx-RTMP</td><td>Nginx, RTMP Module</td><td>流媒体中转，推流 / 拉流</td></tr>
         </tbody>
       </table>
     </div>
