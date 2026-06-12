@@ -341,6 +341,28 @@
 
     .comp-table td:first-child { font-weight: 600; color: var(--accent); }
 
+    /* ===== Demo ===== */
+    .demo-wrapper {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .demo-video {
+      width: 100%;
+      display: block;
+      outline: none;
+    }
+
+    .demo-label {
+      padding: 14px 20px;
+      font-size: 13px;
+      color: var(--text-dim);
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+
     /* ===== Quick Start ===== */
     .code-block {
       background: var(--surface);
@@ -408,6 +430,7 @@
     <ul class="nav-links">
       <li><a href="#features">功能</a></li>
       <li><a href="#architecture">架构</a></li>
+      <li><a href="#demo">演示</a></li>
       <li><a href="#quickstart">快速上手</a></li>
     </ul>
     <a href="https://github.com/breaker505/NightLight" class="nav-github">
@@ -423,6 +446,7 @@
   <div class="mobile-menu" id="mobileMenu">
     <a href="#features">功能</a>
     <a href="#architecture">架构</a>
+    <a href="#demo">演示</a>
     <a href="#quickstart">快速上手</a>
     <a href="https://github.com/breaker505/NightLight">GitHub</a>
   </div>
@@ -518,6 +542,24 @@
           <tr><td>Nginx-RTMP</td><td>Nginx, RTMP Module</td><td>流媒体中转，推流 / 拉流</td></tr>
         </tbody>
       </table>
+    </div>
+  </section>
+
+  <!-- Demo -->
+  <section id="demo">
+    <div class="container">
+      <div class="reveal">
+        <div class="section-label">Demo</div>
+        <h2 class="section-title">效果演示</h2>
+        <p class="section-desc">低光照视频经过 NightLight 实时增强后的对比效果。</p>
+      </div>
+      <div class="demo-wrapper reveal">
+        <video controls loop muted playsinline poster="" class="demo-video">
+          <source src="demo.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+        <div class="demo-label">NightLight 增强效果演示</div>
+      </div>
     </div>
   </section>
 
