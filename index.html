@@ -686,19 +686,19 @@
       <div class="reveal">
         <div class="section-label">Quick Start</div>
         <h2 class="section-title">快速上手</h2>
-        <p class="section-desc">Docker 一键启动，或手动构建。</p>
+        <p class="section-desc">容器化一键部署，支持 GPU 加速；亦可源码级手动构建。</p>
       </div>
 
       <div class="code-block reveal" style="margin-bottom: 16px;">
         <span class="code-label">Docker</span>
-<pre><span class="comment"># 构建并启动 Server + Agent</span>
+<pre><span class="comment"># 构建并启动 Server + Agent 全栈服务</span>
 <span class="cmd">docker compose up -d</span>
 
-<span class="comment"># GPU 加速模式</span>
+<span class="comment"># 启用 GPU 加速，叠加 ONNX CUDA / NVENC 运行时配置</span>
 <span class="cmd">docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d</span>
 
-<span class="comment"># 健康检查</span>
-<span class="cmd">curl http://127.0.0.1:19102/health</span></pre>
+<span class="comment"># 服务探活：校验 Server 健康状态、端口连通性与运行时指标</span>
+<span class="cmd">curl http://xxx.xxx.xxx.xxx:19102/health</span></pre>
       </div>
 
       <div class="code-block reveal">
