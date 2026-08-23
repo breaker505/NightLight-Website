@@ -314,11 +314,26 @@
       isolation: isolate;
       overflow: hidden;
     }
-    #hero-canvas {
+    /* Static aurora backdrop — pure CSS, zero GPU cost */
+    .hero-bg {
       position: absolute; inset: 0;
-      width: 100%; height: 100%;
       z-index: -2;
+      background:
+        radial-gradient(ellipse 55% 45% at 18% 12%, rgba(168,85,247,.20), transparent 62%),
+        radial-gradient(ellipse 55% 45% at 82% 25%, rgba(108,140,255,.20), transparent 62%),
+        radial-gradient(ellipse 70% 55% at 50% 100%, rgba(34,211,238,.10), transparent 70%),
+        radial-gradient(ellipse 100% 80% at 50% 0%, rgba(108,140,255,.06), transparent 75%);
+    }
+    .hero-glow {
+      position: absolute;
+      left: 50%; top: 30%;
+      width: 520px; height: 520px;
+      margin-left: -260px; margin-top: -260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 65%);
+      z-index: -1;
       pointer-events: none;
+      will-change: left, top;
     }
     .hero-grid {
       position: absolute; inset: 0;
@@ -1058,7 +1073,7 @@
         opacity: 1 !important;
         transform: none !important;
       }
-      #hero-canvas { display: none; }
+      .hero-glow { display: none; }
       .hero h1 .scramble-char,
       .hero h1 { opacity: 1 !important; }
       .cursor-dot, .cursor-ring { display: none; }
@@ -1145,8 +1160,9 @@
        Hero — with Three.js shader background
        ============================================================ -->
   <section class="hero" id="top">
-    <canvas id="hero-canvas"></canvas>
+    <div class="hero-bg"></div>
     <div class="hero-grid"></div>
+    <div class="hero-glow" id="heroGlow"></div>
 
     <div class="hero-content">
       <div class="hero-badge">
@@ -1530,10 +1546,7 @@
   <!-- ============================================================
        Scripts
        ============================================================ -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
 
   <script>
     /* =====================================================
@@ -1550,6 +1563,7 @@
     ready(() => {
       initCustomCursor();
       initNavbar();
+      initHeroGlow();
       initSpotlightCards();
       initTilt();
       initMagnetic();
@@ -1557,18 +1571,13 @@
       initTabs();
       initCountUp();
 
-      // Lib-dependent
-      if (typeof THREE !== 'undefined')    initShaderBackground();
-      if (typeof gsap !== 'undefined')     initHeroIntro();
-      if (typeof Lenis !== 'undefined' && !prefersReducedMotion) {
-        initSmoothScroll();
-      }
+      // Hero intro is decorative — GSAP optional, safe to skip
+      if (typeof gsap !== 'undefined') initHeroIntro();
 
       // Text scramble is lib-independent — only skip on reduced motion
       if (!prefersReducedMotion) initTextScramble();
 
       // Section reveal — IntersectionObserver driven, always reliable.
-      // Runs regardless of GSAP/Lenis, so content can never stay hidden.
       initSectionReveal();
     });
 
@@ -1590,17 +1599,6 @@
       let mx = -100, my = -100, dx = -100, dy = -100, rx = -100, ry = -100;
       let visible = false;
 
-      document.addEventListener('mousemove', (e) => {
-        mx = e.clientX; my = e.clientY;
-        if (!visible) {
-          visible = true;
-          dot.classList.add('visible');
-          ring.classList.add('visible');
-          // Snap first frame so it appears under the cursor
-          dx = rx = mx; dy = ry = my;
-        }
-      }, { passive: true });
-
       document.addEventListener('mouseleave', () => {
         visible = false;
         dot.classList.remove('visible');
@@ -1614,6 +1612,8 @@
         }
       });
 
+      // rAF loop only runs while the mouse is moving; idle = no cost
+      let running = false;
       const tick = () => {
         dx += (mx - dx) * 0.85;
         dy += (my - dy) * 0.85;
@@ -1621,11 +1621,24 @@
         ry += (my - ry) * 0.18;
         dot.style.transform  = `translate3d(${dx}px, ${dy}px, 0) translate(-50%, -50%)`;
         ring.style.transform = `translate3d(${rx}px, ${ry}px, 0) translate(-50%, -50%)`;
-        requestAnimationFrame(tick);
+        // Stop when both have caught up with the cursor
+        if (Math.abs(mx - rx) > 0.3 || Math.abs(my - ry) > 0.3) {
+          requestAnimationFrame(tick);
+        } else {
+          running = false;
+        }
       };
-      requestAnimationFrame(tick);
 
-      // Hover state
+      document.addEventListener('mousemove', (e) => {
+        mx = e.clientX; my = e.clientY;
+        if (!visible) {
+          visible = true;
+          dot.classList.add('visible');
+          ring.classList.add('visible');
+          dx = rx = mx; dy = ry = my;
+        }
+        if (!running) { running = true; requestAnimationFrame(tick); }
+      }, { passive: true });
       const hoverSelector = '[data-cursor-hover], a, button, [data-tilt], [data-magnetic], input, [role="button"]';
       document.addEventListener('mouseover', (e) => {
         if (e.target.closest && e.target.closest(hoverSelector)) {
@@ -1682,6 +1695,40 @@
           toggle.classList.remove('open');
         });
       });
+    }
+
+    /* =====================================================
+       Hero glow — lightweight CSS transform follower.
+       Cheap replacement for the WebGL shader backdrop.
+       ===================================================== */
+    function initHeroGlow() {
+      const glow = document.getElementById('heroGlow');
+      const hero = document.querySelector('.hero');
+      if (!glow || !hero || prefersReducedMotion || isTouch) return;
+
+      let raf = null;
+      let tx = 0.5, ty = 0.3;
+      let cx = 0.5, cy = 0.3;
+
+      hero.addEventListener('mousemove', (e) => {
+        const r = hero.getBoundingClientRect();
+        tx = (e.clientX - r.left) / r.width;
+        ty = (e.clientY - r.top)  / r.height;
+        if (!raf) raf = requestAnimationFrame(loop);
+      });
+      hero.addEventListener('mouseleave', () => { tx = 0.5; ty = 0.3; });
+
+      const loop = () => {
+        cx += (tx - cx) * 0.10;
+        cy += (ty - cy) * 0.10;
+        glow.style.left = (cx * 100) + '%';
+        glow.style.top  = (cy * 100) + '%';
+        if (Math.abs(tx - cx) > 0.005 || Math.abs(ty - cy) > 0.005) {
+          raf = requestAnimationFrame(loop);
+        } else {
+          raf = null;
+        }
+      };
     }
 
     /* =====================================================
@@ -1822,64 +1869,10 @@
     }
 
     /* =====================================================
-       Smooth scroll (Lenis) + GSAP ScrollTrigger bridge
-       ===================================================== */
-    function initSmoothScroll() {
-      const lenis = new Lenis({
-        duration: 1.1,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        smoothWheel: true,
-      });
-      // Bridge to GSAP/ScrollTrigger only if they exist
-      if (typeof ScrollTrigger !== 'undefined') lenis.on('scroll', ScrollTrigger.update);
-      if (typeof gsap !== 'undefined') {
-        gsap.ticker.add((time) => { lenis.raf(time * 1000); });
-        gsap.ticker.lagSmoothing(0);
-      }
-
-      // Performance guard: if the device can't hold ~22fps, drop smooth
-      // scrolling and fall back to native scroll (no jank, no queueing).
-      let frames = 0, sum = 0, monitoring = true;
-      const monitor = (now) => {
-        if (!monitoring) return;
-        frames++;
-        sum += now - (monitor.last || now);
-        monitor.last = now;
-        if (frames >= 90) {
-          const avg = sum / frames; // ms
-          frames = 0; sum = 0;
-          if (avg > 45) {
-            monitoring = false;
-            lenis.destroy(); // removes wheel/scroll listeners -> native scroll
-            return;
-          }
-        }
-        requestAnimationFrame(monitor);
-      };
-      requestAnimationFrame(monitor);
-
-      document.querySelectorAll('a[href^="#"]').forEach(a => {
-        a.addEventListener('click', (e) => {
-          const id = a.getAttribute('href');
-          if (id === '#' || id === '#top') return;
-          const target = document.querySelector(id);
-          if (target) {
-            e.preventDefault();
-            if (lenis.isDestroyed) {
-              target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
-            } else {
-              lenis.scrollTo(target, { offset: -80 });
-            }
-          }
-        });
-      });
-    }
-
-    /* =====================================================
-       Hero intro (GSAP — decorative; safe to skip)
+       Hero intro (GSAP — decorative; safe to skip).
+       Anchors rely on native CSS smooth scroll — nothing to do.
        ===================================================== */
     function initHeroIntro() {
-      gsap.registerPlugin(ScrollTrigger);
       const tl = gsap.timeline({ defaults: { ease: 'expo.out' } });
       tl.from('.hero-badge',   { y: 20, opacity: 0, duration: 0.8, delay: 0.2 })
         .from('.hero h1',      { y: 50, opacity: 0, duration: 1.0 }, '<0.15')
@@ -1890,7 +1883,7 @@
 
     /* =====================================================
        Section reveal — IntersectionObserver.
-       Independent of GSAP/Lenis so content can never get
+       Library-independent so content can never get
        stuck invisible. Stagger via transition-delay.
        ===================================================== */
     function initSectionReveal() {
@@ -1962,201 +1955,6 @@
         else el.textContent = finalText;
       };
       requestAnimationFrame(() => setTimeout(tick, 350));
-    }
-
-    /* =====================================================
-       Three.js hero shader background
-       ===================================================== */
-    function initShaderBackground() {
-      const canvas = document.getElementById('hero-canvas');
-      if (!canvas || typeof THREE === 'undefined') return;
-
-      try {
-        const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-        if (!gl) { canvas.style.display = 'none'; return; }
-      } catch {
-        canvas.style.display = 'none';
-        return;
-      }
-
-      const vertexShader = `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = vec4(position, 1.0);
-        }
-      `;
-
-      const fragmentShader = `
-        precision highp float;
-        uniform float uTime;
-        uniform vec2  uMouse;
-        uniform vec2  uResolution;
-        varying vec2  vUv;
-
-        float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-        float noise(vec2 p) {
-          vec2 i = floor(p), f = fract(p);
-          float a = hash(i),
-                b = hash(i + vec2(1.0, 0.0)),
-                c = hash(i + vec2(0.0, 1.0)),
-                d = hash(i + vec2(1.0, 1.0));
-          vec2 u = f * f * (3.0 - 2.0 * f);
-          return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-        }
-        float fbm(vec2 p) {
-          float v = 0.0, a = 0.5;
-          for (int i = 0; i < 4; i++) {
-            v += a * noise(p);
-            p *= 2.02;
-            a *= 0.5;
-          }
-          return v;
-        }
-
-        void main() {
-          vec2 uv = vUv;
-          float aspect = uResolution.x / uResolution.y;
-          vec2 p = (uv - 0.5) * vec2(aspect, 1.0) * 1.6;
-
-          p.x += uTime * 0.04;
-          p.y += uTime * 0.025;
-
-          vec2 m = (uMouse - 0.5) * vec2(aspect, 1.0);
-          p += m * 0.25;
-
-          float n1 = fbm(p);
-          float n2 = fbm(p + n1 * 1.2 + vec2(1.7, 9.2));
-          float n  = mix(n1, n2, 0.6);
-
-          vec3 cBg     = vec3(0.039, 0.039, 0.059);
-          vec3 cAccent = vec3(0.424, 0.549, 1.000);
-          vec3 cAccent2= vec3(0.659, 0.333, 0.969);
-          vec3 cAccent3= vec3(0.133, 0.827, 0.933);
-
-          vec3 col = cBg;
-          col = mix(col, cAccent,  smoothstep(0.35, 0.85, n) * 0.55);
-          col = mix(col, cAccent2, smoothstep(0.55, 0.95, n2) * 0.35);
-          col = mix(col, cAccent3, smoothstep(0.78, 1.05, n)  * 0.25);
-
-          float vig = smoothstep(1.25, 0.35, length(uv - 0.5));
-          col *= mix(0.45, 1.0, vig);
-
-          col *= 1.0 - smoothstep(0.7, 1.0, uv.y) * 0.3;
-
-          gl_FragColor = vec4(col, 1.0);
-        }
-      `;
-
-      const renderer = new THREE.WebGLRenderer({
-        canvas,
-        antialias: false,
-        alpha: false,
-        powerPreference: 'high-performance',
-      });
-
-      // Adaptive quality: start at 1.25, degrade if the GPU can't keep up
-      let qualityScale = 1.0;      // 1.0 = full, 0.75, 0.5
-      const dprBase = Math.min(window.devicePixelRatio, 1.25);
-      const applySize = () => {
-        const w = Math.max(1, Math.round(window.innerWidth  * qualityScale));
-        const h = Math.max(1, Math.round(window.innerHeight * qualityScale));
-        renderer.setPixelRatio(dprBase * (qualityScale < 1 ? 1 : 1)); // dpr handled below
-        renderer.setSize(w, h, false);
-        material.uniforms.uResolution.value.set(w, h);
-        // CSS size stays 100% regardless of internal buffer
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-      };
-
-      const scene  = new THREE.Scene();
-      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-
-      const geometry = new THREE.PlaneGeometry(2, 2);
-      const material = new THREE.ShaderMaterial({
-        vertexShader,
-        fragmentShader,
-        uniforms: {
-          uTime:       { value: 0 },
-          uMouse:      { value: new THREE.Vector2(0.5, 0.5) },
-          uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-        },
-        depthTest: false,
-        depthWrite: false,
-      });
-      scene.add(new THREE.Mesh(geometry, material));
-      applySize();
-
-      let targetMx = 0.5, targetMy = 0.5;
-      let raf = null;
-      let running = true;
-      let frameCount = 0;
-      let frameTimeSum = 0;
-
-      window.addEventListener('mousemove', (e) => {
-        targetMx = e.clientX / window.innerWidth;
-        targetMy = 1 - e.clientY / window.innerHeight;
-      }, { passive: true });
-
-      window.addEventListener('resize', () => {
-        applySize();
-      });
-
-      const start = performance.now();
-      const loop = (now) => {
-        if (!running) return;
-
-        // Adaptive quality: sample every 60 frames
-        frameCount++;
-        if (now) {
-          frameTimeSum += now - (loop.last || now);
-        }
-        loop.last = now;
-        if (frameCount >= 60) {
-          const avgFrame = frameTimeSum / frameCount; // ms
-          if (avgFrame > 45 && qualityScale > 0.5) {
-            qualityScale -= 0.25;
-            applySize();
-          } else if (avgFrame < 18 && qualityScale < 1.0) {
-            qualityScale = Math.min(1, qualityScale + 0.25);
-            applySize();
-          }
-          frameCount = 0;
-          frameTimeSum = 0;
-        }
-
-        const t = (performance.now() - start) / 1000;
-        material.uniforms.uTime.value = t;
-        const m = material.uniforms.uMouse.value;
-        m.x += (targetMx - m.x) * 0.04;
-        m.y += (targetMy - m.y) * 0.04;
-        renderer.render(scene, camera);
-        raf = requestAnimationFrame(loop);
-      };
-      loop();
-
-      const hero = document.querySelector('.hero');
-      if (hero && 'IntersectionObserver' in window) {
-        const io = new IntersectionObserver(([entry]) => {
-          if (entry.isIntersecting) {
-            if (!running) { running = true; loop(); }
-          } else {
-            running = false;
-            if (raf) cancelAnimationFrame(raf);
-          }
-        }, { threshold: 0 });
-        io.observe(hero);
-      }
-
-      document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-          running = false;
-          if (raf) cancelAnimationFrame(raf);
-        } else if (!running) {
-          running = true;
-          loop();
-        }
-      });
     }
   </script>
 </body>
