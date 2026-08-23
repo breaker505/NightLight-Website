@@ -101,15 +101,14 @@
       -moz-osx-font-smoothing: grayscale;
       font-feature-settings: "ss01", "cv11";
     }
-    /* Body grain */
+    /* Body grain (plain overlay — no blend mode, no forced recomposite) */
     body::before {
       content: '';
       position: fixed; inset: 0;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      opacity: 0.035;
+      opacity: 0.028;
       pointer-events: none;
       z-index: 1;
-      mix-blend-mode: overlay;
     }
 
     a { color: var(--accent); text-decoration: none; transition: color .2s, opacity .2s; }
@@ -451,8 +450,7 @@
       padding: var(--s-5) 0;
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
-      background: rgba(10,10,15,.4);
-      backdrop-filter: blur(8px);
+      background: rgba(10,10,15,.85);
       overflow: hidden;
       mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
       -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
@@ -578,7 +576,14 @@
     /* ===================================================
        Section base
        =================================================== */
-    section.inner { padding: var(--s-10) 0; position: relative; z-index: 2; }
+    section.inner {
+      padding: var(--s-10) 0;
+      position: relative;
+      z-index: 2;
+      /* Skip rendering of offscreen sections — big win for long-page scroll */
+      content-visibility: auto;
+      contain-intrinsic-size: auto 800px;
+    }
     .section-head {
       max-width: 720px;
       margin-bottom: var(--s-8);
@@ -733,10 +738,12 @@
               mask-composite: exclude;
       opacity: 0;
       transition: opacity .35s;
-      animation: spin-angle 5s linear infinite;
       pointer-events: none;
     }
-    .feature-card:hover::before { opacity: 1; }
+    .feature-card:hover::before {
+      opacity: 1;
+      animation: spin-angle 5s linear infinite;
+    }
 
     @keyframes spin-angle {
       to { --angle: 360deg; }
@@ -1030,7 +1037,6 @@
       transform: translateY(28px);
       transition: opacity .7s var(--ease-out-expo),
                   transform .7s var(--ease-out-expo);
-      will-change: opacity, transform;
     }
     .reveal.in-view,
     .reveal-stagger > *.in-view {
@@ -1397,7 +1403,7 @@
       </div>
 
       <div class="arch-img-wrapper reveal" data-spotlight>
-        <img src="project.png" alt="NightLight Architecture">
+        <img src="project.png" alt="NightLight Architecture" loading="lazy">
       </div>
 
       <table class="comp-table reveal">
@@ -1425,7 +1431,7 @@
         <p class="section-desc">NightVision 客户端的低光照实时渲染效果演示。</p>
       </div>
       <div class="demo-wrapper reveal" data-spotlight>
-        <video controls loop muted playsinline class="demo-video">
+        <video controls loop muted playsinline preload="metadata" class="demo-video">
           <source src="demo.mp4?v=4" type="video/mp4">
           Your browser does not support the video tag.
         </video>
@@ -1831,6 +1837,27 @@
         gsap.ticker.lagSmoothing(0);
       }
 
+      // Performance guard: if the device can't hold ~22fps, drop smooth
+      // scrolling and fall back to native scroll (no jank, no queueing).
+      let frames = 0, sum = 0, monitoring = true;
+      const monitor = (now) => {
+        if (!monitoring) return;
+        frames++;
+        sum += now - (monitor.last || now);
+        monitor.last = now;
+        if (frames >= 90) {
+          const avg = sum / frames; // ms
+          frames = 0; sum = 0;
+          if (avg > 45) {
+            monitoring = false;
+            lenis.destroy(); // removes wheel/scroll listeners -> native scroll
+            return;
+          }
+        }
+        requestAnimationFrame(monitor);
+      };
+      requestAnimationFrame(monitor);
+
       document.querySelectorAll('a[href^="#"]').forEach(a => {
         a.addEventListener('click', (e) => {
           const id = a.getAttribute('href');
@@ -1838,7 +1865,11 @@
           const target = document.querySelector(id);
           if (target) {
             e.preventDefault();
-            lenis.scrollTo(target, { offset: -80 });
+            if (lenis.isDestroyed) {
+              target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+            } else {
+              lenis.scrollTo(target, { offset: -80 });
+            }
           }
         });
       });
@@ -1885,7 +1916,7 @@
             io.unobserve(entry.target);
           }
         });
-      }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
+      }, { threshold: 0.05, rootMargin: '0px 0px 300px 0px' });
 
       hidden.forEach(el => io.observe(el));
 
@@ -1975,7 +2006,7 @@
         }
         float fbm(vec2 p) {
           float v = 0.0, a = 0.5;
-          for (int i = 0; i < 5; i++) {
+          for (int i = 0; i < 4; i++) {
             v += a * noise(p);
             p *= 2.02;
             a *= 0.5;
@@ -2023,8 +2054,20 @@
         alpha: false,
         powerPreference: 'high-performance',
       });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-      renderer.setSize(window.innerWidth, window.innerHeight, false);
+
+      // Adaptive quality: start at 1.25, degrade if the GPU can't keep up
+      let qualityScale = 1.0;      // 1.0 = full, 0.75, 0.5
+      const dprBase = Math.min(window.devicePixelRatio, 1.25);
+      const applySize = () => {
+        const w = Math.max(1, Math.round(window.innerWidth  * qualityScale));
+        const h = Math.max(1, Math.round(window.innerHeight * qualityScale));
+        renderer.setPixelRatio(dprBase * (qualityScale < 1 ? 1 : 1)); // dpr handled below
+        renderer.setSize(w, h, false);
+        material.uniforms.uResolution.value.set(w, h);
+        // CSS size stays 100% regardless of internal buffer
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+      };
 
       const scene  = new THREE.Scene();
       const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -2042,10 +2085,13 @@
         depthWrite: false,
       });
       scene.add(new THREE.Mesh(geometry, material));
+      applySize();
 
       let targetMx = 0.5, targetMy = 0.5;
       let raf = null;
       let running = true;
+      let frameCount = 0;
+      let frameTimeSum = 0;
 
       window.addEventListener('mousemove', (e) => {
         targetMx = e.clientX / window.innerWidth;
@@ -2053,13 +2099,32 @@
       }, { passive: true });
 
       window.addEventListener('resize', () => {
-        renderer.setSize(window.innerWidth, window.innerHeight, false);
-        material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+        applySize();
       });
 
       const start = performance.now();
-      const loop = () => {
+      const loop = (now) => {
         if (!running) return;
+
+        // Adaptive quality: sample every 60 frames
+        frameCount++;
+        if (now) {
+          frameTimeSum += now - (loop.last || now);
+        }
+        loop.last = now;
+        if (frameCount >= 60) {
+          const avgFrame = frameTimeSum / frameCount; // ms
+          if (avgFrame > 45 && qualityScale > 0.5) {
+            qualityScale -= 0.25;
+            applySize();
+          } else if (avgFrame < 18 && qualityScale < 1.0) {
+            qualityScale = Math.min(1, qualityScale + 0.25);
+            applySize();
+          }
+          frameCount = 0;
+          frameTimeSum = 0;
+        }
+
         const t = (performance.now() - start) / 1000;
         material.uniforms.uTime.value = t;
         const m = material.uniforms.uMouse.value;
