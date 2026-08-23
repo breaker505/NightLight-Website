@@ -395,6 +395,11 @@
     .hero-buttons {
       display: flex; gap: var(--s-3);
       flex-wrap: wrap; justify-content: center;
+      align-items: center;
+    }
+    .btn {
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     .btn {
       display: inline-flex; align-items: center; gap: 8px;
@@ -1018,10 +1023,20 @@
     .footer-meta .sep { opacity: .4; }
 
     /* ===================================================
-       Reveal utilities
+       Reveal utilities (IO-driven — always reliable)
        =================================================== */
-    .reveal { opacity: 0; transform: translateY(28px); }
-    .reveal-stagger > * { opacity: 0; transform: translateY(20px); }
+    .reveal, .reveal-stagger > * {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity .7s var(--ease-out-expo),
+                  transform .7s var(--ease-out-expo);
+      will-change: opacity, transform;
+    }
+    .reveal.in-view,
+    .reveal-stagger > *.in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
     /* ===================================================
        Reduced motion
@@ -1509,8 +1524,8 @@
   <!-- ============================================================
        Scripts
        ============================================================ -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.42/bundled/lenis.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
 
@@ -1538,24 +1553,17 @@
 
       // Lib-dependent
       if (typeof THREE !== 'undefined')    initShaderBackground();
-      if (typeof gsap !== 'undefined')     initReveals();
-      if (typeof Lenis !== 'undefined' && typeof gsap !== 'undefined' && !prefersReducedMotion) {
+      if (typeof gsap !== 'undefined')     initHeroIntro();
+      if (typeof Lenis !== 'undefined' && !prefersReducedMotion) {
         initSmoothScroll();
       }
 
       // Text scramble is lib-independent — only skip on reduced motion
       if (!prefersReducedMotion) initTextScramble();
 
-      // Fallback: show everything if any lib failed
-      requestAnimationFrame(() => {
-        document.querySelectorAll('.reveal, .reveal-stagger > *').forEach(el => {
-          const cs = getComputedStyle(el);
-          if (cs.opacity === '0') {
-            el.style.opacity = '1';
-            el.style.transform = 'none';
-          }
-        });
-      });
+      // Section reveal — IntersectionObserver driven, always reliable.
+      // Runs regardless of GSAP/Lenis, so content can never stay hidden.
+      initSectionReveal();
     });
 
     /* =====================================================
@@ -1816,9 +1824,12 @@
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         smoothWheel: true,
       });
-      lenis.on('scroll', ScrollTrigger.update);
-      gsap.ticker.add((time) => { lenis.raf(time * 1000); });
-      gsap.ticker.lagSmoothing(0);
+      // Bridge to GSAP/ScrollTrigger only if they exist
+      if (typeof ScrollTrigger !== 'undefined') lenis.on('scroll', ScrollTrigger.update);
+      if (typeof gsap !== 'undefined') {
+        gsap.ticker.add((time) => { lenis.raf(time * 1000); });
+        gsap.ticker.lagSmoothing(0);
+      }
 
       document.querySelectorAll('a[href^="#"]').forEach(a => {
         a.addEventListener('click', (e) => {
@@ -1834,38 +1845,56 @@
     }
 
     /* =====================================================
-       GSAP reveal animations
+       Hero intro (GSAP — decorative; safe to skip)
        ===================================================== */
-    function initReveals() {
+    function initHeroIntro() {
       gsap.registerPlugin(ScrollTrigger);
-
       const tl = gsap.timeline({ defaults: { ease: 'expo.out' } });
       tl.from('.hero-badge',   { y: 20, opacity: 0, duration: 0.8, delay: 0.2 })
         .from('.hero h1',      { y: 50, opacity: 0, duration: 1.0 }, '<0.15')
         .from('.hero .tagline',{ y: 24, opacity: 0, duration: 0.9 }, '<0.3')
         .from('.hero-buttons .btn', { y: 16, opacity: 0, duration: 0.7, stagger: 0.08 }, '<0.25')
         .from('.marquee',      { y: 30, opacity: 0, duration: 0.9 }, '<0.3');
+    }
 
-      gsap.utils.toArray('.reveal').forEach(el => {
-        gsap.from(el, {
-          y: 28, opacity: 0, duration: 0.9, ease: 'expo.out',
-          scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
+    /* =====================================================
+       Section reveal — IntersectionObserver.
+       Independent of GSAP/Lenis so content can never get
+       stuck invisible. Stagger via transition-delay.
+       ===================================================== */
+    function initSectionReveal() {
+      const hidden = document.querySelectorAll('.reveal, .reveal-stagger > *');
+      if (!hidden.length) return;
+
+      // Stagger children of .reveal-stagger
+      document.querySelectorAll('.reveal-stagger').forEach(parent => {
+        [...parent.children].forEach((child, i) => {
+          child.style.transitionDelay = Math.min(i * 0.07, 0.6) + 's';
         });
       });
 
-      gsap.utils.toArray('.reveal-stagger').forEach(parent => {
-        gsap.from(parent.children, {
-          y: 24, opacity: 0, duration: 0.7, ease: 'expo.out', stagger: 0.07,
-          scrollTrigger: { trigger: parent, start: 'top 85%', toggleActions: 'play none none none' },
-        });
-      });
+      if (prefersReducedMotion || !('IntersectionObserver' in window)) {
+        hidden.forEach(el => el.classList.add('in-view'));
+        return;
+      }
 
-      gsap.utils.toArray('.section-label').forEach(label => {
-        gsap.from(label, {
-          x: -16, opacity: 0, duration: 0.6, ease: 'expo.out',
-          scrollTrigger: { trigger: label, start: 'top 90%' },
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            io.unobserve(entry.target);
+          }
         });
-      });
+      }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
+
+      hidden.forEach(el => io.observe(el));
+
+      // Absolute safety net: after 2.5s, force-reveal anything still hidden.
+      // Prevents permanent invisibility if IO or scroll misbehaves.
+      setTimeout(() => {
+        document.querySelectorAll('.reveal, .reveal-stagger > *:not(.in-view)')
+          .forEach(el => el.classList.add('in-view'));
+      }, 2500);
     }
 
     /* =====================================================
